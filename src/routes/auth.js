@@ -1,3 +1,4 @@
+// auth.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -8,7 +9,15 @@ const router = express.Router();
 
 // Registro de usuario
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+  const {
+    nombre,
+    apellido,
+    email,
+    password,
+    calle,
+    numero,
+    codigoPostal,
+  } = req.body;
 
   try {
     // Verificar si el usuario ya existe
@@ -20,8 +29,15 @@ router.post('/register', async (req, res) => {
     // Crear y guardar un nuevo usuario con una suscripción vacía
     const hashedPassword = await bcrypt.hash(password, 10); // Encriptar contraseña
     const user = new User({
+      nombre,
+      apellido,
       email,
       password: hashedPassword,
+      direccion: {
+        calle,
+        numero,
+        codigoPostal,
+      },
       subscription: [], // Inicializar la suscripción vacía
     });
     await user.save();
@@ -51,31 +67,25 @@ router.post('/login', async (req, res) => {
     }
 
     // Generar un token JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: '1h', // El token expira en 1 hora
-    });
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' } // El token expira en 1 hora
+    );
 
-    res.status(200).json({ token, message: 'Inicio de sesión exitoso' });
+    // Devolver el token y los datos del usuario
+    res.status(200).json({
+      token,
+      user: {
+        nombre: user.nombre,
+        apellido: user.apellido,
+        direccion: user.direccion,
+      },
+      message: 'Inicio de sesión exitoso',
+    });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
     res.status(500).json({ message: 'Error al iniciar sesión' });
-  }
-});
-
-// Verificar token (opcional: útil para probar si un token es válido)
-router.get('/verify', async (req, res) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ message: 'Token no proporcionado' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    res.status(200).json({ message: 'Token válido', decoded });
-  } catch (error) {
-    console.error('Error al verificar el token:', error);
-    res.status(401).json({ message: 'Token inválido' });
   }
 });
 
