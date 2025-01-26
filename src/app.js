@@ -34,6 +34,7 @@ app.get('/', (req, res) => {
 const subscriptionRoutes = require('./routes/subscription');
 
 app.use('/api/subscription', subscriptionRoutes);
+require('dotenv').config();
 
 
 // Iniciar el servidor
